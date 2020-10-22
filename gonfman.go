@@ -2,6 +2,7 @@ package gonfman
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"time"
 
@@ -64,7 +65,7 @@ var ErrUnsupportedDataType = errors.New("column data_type_id has unknown value")
 // ConfigManager implements logic or reading application parameters
 // from the sql database.
 type ConfigManager struct {
-	db     SQLDB
+	db     *sql.DB
 	params struct {
 		list []Param
 	}
@@ -78,22 +79,12 @@ type ConfigManager struct {
 	}
 }
 
-type SQLDB interface {
-	Query(query string, args ...interface{}) (Rowser, error)
-}
-
-type Rowser interface {
-	Close() error
-	Next() bool
-	Scan(dest ...interface{}) error
-	Err() error
-}
-
-// NewConfigManger returns ConfigManager.
-func New(db SQLDB) *ConfigManager {
+// New returns ConfigManager.
+func New(db *sql.DB) *ConfigManager {
 	return &ConfigManager{db: db}
 }
 
+// Init caches rows from config_* tables.
 func (s *ConfigManager) Init(ctx context.Context) error {
 	if err := s.readSections(); err != nil {
 		return err
