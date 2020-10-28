@@ -17,7 +17,7 @@ type Param struct {
 	PositionOrder     int       `json:"position_order"`
 	Name              string    `json:"name"`
 	DataTypeID        string    `json:"data_type_id"`
-	ControlID         string    `json:"control_id"`
+	ControlID         *string   `json:"control_id"`
 	RawValue          string    `json:"raw_value"`
 	IsReadonly        bool      `json:"is_readonly"`
 	IsNullable        bool      `json:"is_nullable"`
@@ -134,7 +134,7 @@ func (cm *ConfigManager) readSections() error {
 
 func (cm *ConfigManager) readControls() error {
 
-	qry := `select id, parent_id, validate_function, failed_validation_response from ` + TableNameControl
+	qry := `select id, validation_function, failed_validation_response from ` + TableNameControl
 
 	rows, err := cm.db.Query(qry)
 	if err != nil {
