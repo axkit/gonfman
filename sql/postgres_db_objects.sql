@@ -18,7 +18,7 @@ insert into config_data_types (id) values
 create table config_controls (
    id                   VARCHAR(128)         not null,
    validation_function        TEXT,
-   failed_validation_response jsonb,
+   failed_validation_response TEXT,
    constraint PK_CFGCTRL primary key (id)
 );
 
@@ -60,7 +60,7 @@ create table config_params (
    is_readonly          BOOL                 default false,
    is_nullable          BOOL 			     default false,
    is_sensitive 		BOOL 			     default false,
-   updated_at 			timestamp with time zone default now(),
+   updated_at 			timestamptz 		 ,
    updated_finger_print bigint,   
    constraint PK_CFGPARAM primary key (id),
    constraint FK_CFGPARAM_CFGDT  foreign key (data_type_id) references config_data_types(id),
@@ -68,7 +68,7 @@ create table config_params (
    constraint FK_CFGPARAM_CFGSEC foreign key (section_id) references config_sections(id)
 );
 
-
+/*
 insert into production.parameters(id, section_id, position_order, name, type_id, control_id, raw_value, is_readonly) values
 ('database.timezone', )
 ('general', 					null,     	true, 	10, 'General', 						null, 		null, 		true, 'management-console'),
@@ -77,38 +77,12 @@ insert into production.parameters(id, section_id, position_order, name, type_id,
 	('sign_out_forward_page', 	'frontend', false, 	10, 'Arrival page after sign out', 	'string', 	'/login', 	false, 'management-console'),
 	('default_language', 		'frontend', false, 	20, 'Default language', 			'string', 	'ru', 		true, 'management-console'),
 ('mailer', 						null,     	true, 	30, 'Emailer', 						null, 		null, 		true, 'management-console'),
-	('contact_email', 			'mailer',   false, 	10, 'Contact email', 				'string', 	'mail@mail.ru', 	false, 'management-console'),
+	('contact_email', 			'mailer',   false, 	10, 'Contact email', 				'string', 	'mail@mail.com', 	false, 'management-console'),
 	('contact_subject', 		'mailer',   false, 	20, 'Email subject', 				'string', 	'', 		false, 'management-console'),
 ('backend', 					null,     	true, 	40, 'Database', 					 null,    	null, 		true, 'management-console'),
 	('database', 			'backend',      true, 	10, 'Backend', 		null, 	null, 		null, 'management-console'),
 	('database.max_open_conns', 			'database', false, 	10, 'Max open connections', 		'int32', 	'100', 		false, 'management-console'),
 	('database.max_idle_conns', 			'database', false, 	20, 'Max idle connections', 		'int32', 	'3', 		false, 'management-console');
 	('database.timezone', 			        'database', false, 	20, 'Max idle connections', 		'int32', 	'3', 		false, 'management-console');
+*/
 
-
-
-
-('for', null, true, 'General parameters', 'management-console');
-
-('sign_out_forward_page', general)
-	"defaultParams": {
-		"lang": "ru",
-		"signOutForwardPage": "/login?",
-		"contactEmail": "info@ab-es.com",
-		"contactSubject": "Subject for email",
-		"countInSearchList": 5
-	},
-
-insert into ollover.parameters(id, parent_id, is_folder, position_order, name, data_type, raw_value, is_readonly, section) values
-('is_demo', 'general', false, 10, 'Is deployed in demo mode', 'bool', 'true', true, 'management-console');
-
-	"defaultParams": {
-		"lang": "ru",
-		"signOutForwardPage": "/login?",
-		"contactEmail": "info@ab-es.com",
-		"contactSubject": "Subject for email",
-		"countInSearchList": 5
-	},
-
-	"cfsUrl": "http://127.0.0.1:8089/",
-	"cdnPath":  "http://10.15.5.246:8089/files/download",

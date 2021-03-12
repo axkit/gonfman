@@ -1,2 +1,4 @@
 github.com/axkit/gonfig v0.0.0-20201022155227-d122ce4ac785 h1:odD/PORlJWi8mNsmLasn20L3A9GEeGJs1NQreG+pGYQ=
 github.com/axkit/gonfig v0.0.0-20201022155227-d122ce4ac785/go.mod h1:MviMj9UpfwxnugblICf6hnPK62fgkwWWsa9T8o2RE6A=
+github.com/axkit/gonfig v0.0.0-20201028222509-5a23cc276a0e h1:qUroHvfHjnDmXf7oNKkDKYpX+xtgTIIYmh+Zf3X8k5w=
+github.com/axkit/gonfig v0.0.0-20201028222509-5a23cc276a0e/go.mod h1:MviMj9UpfwxnugblICf6hnPK62fgkwWWsa9T8o2RE6A=

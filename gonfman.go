@@ -13,31 +13,31 @@ import (
 // in RawValue field.
 type Param struct {
 	ID                string    `json:"id"`
-	SectionID         *string   `json:"section_id"`
-	PositionOrder     int       `json:"position_order"`
+	SectionID         string    `json:"sectionID"`
+	PositionOrder     int       `json:"positionOrder"`
 	Name              string    `json:"name"`
-	DataTypeID        string    `json:"data_type_id"`
-	ControlID         *string   `json:"control_id"`
-	RawValue          string    `json:"raw_value"`
-	IsReadonly        bool      `json:"is_readonly"`
-	IsNullable        bool      `json:"is_nullable"`
+	DataTypeID        string    `json:"dataTypeID"`
+	ControlID         *string   `json:"controlID"`
+	RawValue          string    `json:"rawValue"`
+	IsReadonly        bool      `json:"isReadonly"`
+	IsNullable        bool      `json:"isNullable"`
 	UpdatedAt         time.Time `json:"-"`
 	UpdateFingerPrint int       `json:"-"`
 }
 
 // Section describes a hierarchy of configuration parameters.
 type Section struct {
-	ID            string  `json:"id"`
-	ParentID      *string `json:"parent_id"`
-	PositionOrder int     `json:"position_order"`
-	Name          string  `json:"name"`
+	ID            string `json:"id"`
+	ParentID      string `json:"parentID"`
+	PositionOrder int    `json:"positionOrder"`
+	Name          string `json:"name"`
 }
 
 // Control specify ui control to be used for param's value modification.
 type Control struct {
 	ID                       string  `json:"id"`
-	ValidationFunction       *string `json:"validate_function"`
-	FailedValidationResponse *[]byte `json:"failed_validation_response"`
+	ValidationFunction       *string `json:"validateFunction"`
+	FailedValidationResponse *string `json:"failedValidationResponse"`
 }
 
 var (
@@ -116,16 +116,24 @@ func (cm *ConfigManager) readSections() error {
 	}
 	defer rows.Close()
 
-	var s Section
+	var (
+		s        Section
+		parentID *string
+	)
 
 	for rows.Next() {
 		if err := rows.Scan(
 			&s.ID,
-			&s.ParentID,
+			&parentID,
 			&s.PositionOrder,
 			&s.Name,
 		); err != nil {
 			return err
+		}
+		if parentID == nil {
+			s.ParentID = ""
+		} else {
+			s.ParentID = *parentID
 		}
 		cm.sections.list = append(cm.sections.list, s)
 	}
@@ -167,12 +175,15 @@ func (cm *ConfigManager) readParams() error {
 	}
 	defer rows.Close()
 
-	var p Param
+	var (
+		p         Param
+		sectionID *string
+	)
 
 	for rows.Next() {
 		if err := rows.Scan(
 			&p.ID,
-			&p.SectionID,
+			&sectionID,
 			&p.PositionOrder,
 			&p.Name,
 			&p.DataTypeID,
@@ -182,6 +193,11 @@ func (cm *ConfigManager) readParams() error {
 			&p.IsNullable,
 		); err != nil {
 			return err
+		}
+		if sectionID == nil {
+			p.SectionID = ""
+		} else {
+			p.SectionID = *sectionID
 		}
 		cm.params.list = append(cm.params.list, p)
 	}
@@ -211,5 +227,27 @@ func (cm *ConfigManager) applyTo(g gonfig.Configer, ow bool) error {
 			return err
 		}
 	}
+	return nil
+}
+
+func (cm *ConfigManager) Controls() []Control {
+	res := make([]Control, len(cm.controls.list))
+	copy(res, cm.controls.list)
+	return res
+}
+
+func (cm *ConfigManager) Sections() []Section {
+	res := make([]Section, len(cm.sections.list))
+	copy(res, cm.sections.list)
+	return res
+}
+
+func (cm *ConfigManager) Params() []Param {
+	res := make([]Param, len(cm.params.list))
+	copy(res, cm.params.list)
+	return res
+}
+
+func (cm *ConfigManager) UpdateParams(m map[string]string) error {
 	return nil
 }
