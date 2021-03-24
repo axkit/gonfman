@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"sync"
 	"time"
 
 	"github.com/axkit/gonfig"
@@ -20,6 +21,7 @@ type Param struct {
 	ControlID         *string   `json:"controlID"`
 	RawValue          string    `json:"rawValue"`
 	IsReadonly        bool      `json:"isReadonly"`
+	IsSensitive       bool      `json:"-"`
 	IsNullable        bool      `json:"isNullable"`
 	UpdatedAt         time.Time `json:"-"`
 	UpdateFingerPrint int       `json:"-"`
@@ -67,7 +69,9 @@ var ErrUnsupportedDataType = errors.New("column data_type_id has unknown value")
 type ConfigManager struct {
 	db     *sql.DB
 	params struct {
+		mux  sync.RWMutex
 		list []Param
+		idx  map[string]int
 	}
 
 	sections struct {
@@ -167,7 +171,7 @@ func (cm *ConfigManager) readControls() error {
 
 func (cm *ConfigManager) readParams() error {
 
-	qry := `select id, section_id, position_order, name, data_type_id, control_id, raw_value, is_readonly, is_nullable from ` + TableNameParam
+	qry := `select id, section_id, position_order, name, data_type_id, control_id, raw_value, is_readonly, is_sensitive, is_nullable from ` + TableNameParam
 
 	rows, err := cm.db.Query(qry)
 	if err != nil {
@@ -180,6 +184,8 @@ func (cm *ConfigManager) readParams() error {
 		sectionID *string
 	)
 
+	cm.params.idx = make(map[string]int)
+
 	for rows.Next() {
 		if err := rows.Scan(
 			&p.ID,
@@ -190,6 +196,7 @@ func (cm *ConfigManager) readParams() error {
 			&p.ControlID,
 			&p.RawValue,
 			&p.IsReadonly,
+			&p.IsSensitive,
 			&p.IsNullable,
 		); err != nil {
 			return err
@@ -199,6 +206,7 @@ func (cm *ConfigManager) readParams() error {
 		} else {
 			p.SectionID = *sectionID
 		}
+		cm.params.idx[p.ID] = len(cm.params.list)
 		cm.params.list = append(cm.params.list, p)
 	}
 	return rows.Err()
@@ -248,6 +256,42 @@ func (cm *ConfigManager) Params() []Param {
 	return res
 }
 
-func (cm *ConfigManager) UpdateParams(m map[string]string) error {
+func (cm *ConfigManager) UpdateParams(m map[string]string, userFingerPrint int64) error {
+	tx, err := cm.db.Begin()
+	if err != nil {
+		return err
+	}
+
+	st, err := cm.db.Prepare(`update config_params set raw_value = $1, 
+													  updated_finger_print = $2,
+													  updated_at = $3,
+													  where id = $4`)
+	if err != nil {
+		return err
+	}
+
+	now := time.Now()
+
+	for id, rv := range m {
+		if _, err := st.Exec(rv, userFingerPrint, now, id); err != nil {
+			_ = tx.Rollback()
+			return err
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+
+	cm.params.mux.Lock()
+	for id, rv := range m {
+		idx, ok := cm.params.idx[id]
+		if ok {
+			cm.params.list[idx].RawValue = rv
+			cm.params.list[idx].UpdateFingerPrint = int(userFingerPrint)
+			cm.params.list[idx].UpdatedAt = now
+		}
+	}
+	cm.params.mux.Unlock()
 	return nil
 }
